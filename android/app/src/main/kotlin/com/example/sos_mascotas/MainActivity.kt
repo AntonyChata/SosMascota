@@ -1,4 +1,4 @@
-package com.example.sos_mascotas
+package com.smii.sosmascota
 
 import io.flutter.embedding.android.FlutterActivity
 
