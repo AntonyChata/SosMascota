@@ -1,46 +1,65 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-// ViewModel
-import 'viewmodels/login_viewmodel.dart';
+import 'vista/auth/pantalla_registro.dart';
+import 'vista/auth/pantalla_login.dart';
+import 'vista/auth/pantalla_recuperar.dart';
+import 'vista/auth/pantalla_verifica_email.dart';
 
-// Vistas
-import 'vistas/login/login_pantalla.dart';
-import 'vistas/login/registro_pantalla.dart';
+import 'vista/usuario/pantalla_inicio.dart';
+import 'vista/usuario/pantalla_perfil.dart';
+
+import 'vista/reportes/pantalla_reporte_mascota.dart';
+import 'vista/reportes/pantalla_avistamiento.dart';
+import 'vista/reportes/pantalla_ver_reportes.dart';
+import 'vista/reportes/pantalla_mis_reportes.dart';
+
+import 'vistamodelo/auth/recuperar_vm.dart';
+import 'vistamodelo/auth/registro_vm.dart';
+import 'vistamodelo/auth/login_vm.dart';
+import 'servicios/api_dni_servicio.dart';
+import 'vistamodelo/usuario/perfil_vm.dart';
+
+final String bearer =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyOTUsImV4cCI6MTc1ODIzOTQxMX0.wX7JTrLUVGXvotDn376U462eIwzlA3PgzcM3sQ-mVX8";
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => LoginViewModel())],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'SOS Mascotas - Autenticación',
-        theme: ThemeData(
-          brightness: Brightness.dark,
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF00BFA5),
-            brightness: Brightness.dark,
-          ),
-          inputDecorationTheme: const InputDecorationTheme(
-            border: OutlineInputBorder(),
-          ),
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-            ),
-          ),
+    final api = ApiDniServicio(bearerToken: bearer);
+
+    return MaterialApp(
+      title: 'SosMascota',
+      theme: ThemeData(primarySwatch: Colors.teal),
+      debugShowCheckedModeBanner: false,
+      initialRoute: "/login",
+      routes: {
+        "/login": (_) => ChangeNotifierProvider(
+          create: (_) => LoginVM(),
+          child: const PantallaLogin(),
         ),
-        // Rutas iniciales (solo autenticación por ahora)
-        initialRoute: '/login',
-        routes: {
-          '/login': (_) => const LoginPantalla(),
-          '/registro': (_) => const RegistroPantalla(),
-        },
-      ),
+        "/registro": (_) => ChangeNotifierProvider(
+          create: (_) => RegistroVM(apiDni: api), // ✅ corregido
+          child: const PantallaRegistro(),
+        ),
+        "/recuperar": (_) => ChangeNotifierProvider(
+          create: (_) => RecuperarVM(),
+          child: const PantallaRecuperar(),
+        ),
+        "/verificaEmail": (_) => const PantallaVerificaEmail(),
+        "/perfil": (_) => ChangeNotifierProvider(
+          create: (_) => PerfilVM(),
+          child: const PantallaPerfil(),
+        ),
+        "/inicio": (_) => const PantallaInicio(),
+
+        "/reportarMascota": (_) => const PantallaReporteMascota(),
+        "/avistamiento": (_) => const PantallaAvistamiento(),
+        "/verReportes": (_) => const PantallaVerReportes(),
+        "/misReportes": (_) => const PantallaMisReportes(),
+      },
     );
   }
 }
