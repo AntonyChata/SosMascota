@@ -5,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:sos_mascotas/vistamodelo/notificacion/notificacion_vm.dart';
 import 'package:sos_mascotas/vista/chat/pantalla_chats_activos.dart';
+import 'package:sos_mascotas/vistamodelo/colaborador_viewmodel.dart';
+import 'package:sos_mascotas/modelo/colaborador_model.dart';
 
 class PantallaInicio extends StatefulWidget {
   const PantallaInicio({super.key});
@@ -15,6 +17,8 @@ class PantallaInicio extends StatefulWidget {
 
 class _PantallaInicioState extends State<PantallaInicio> {
   int _currentIndex = 0;
+  bool _modoOscuro = false;
+  final ColaboradorViewModel colaboradorViewModel = ColaboradorViewModel();
 
   @override
   Widget build(BuildContext context) {
@@ -41,8 +45,10 @@ class _PantallaInicioState extends State<PantallaInicio> {
           Container(
             width: 260,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF009688), Color(0xFF00695C)],
+              gradient: LinearGradient(
+                colors: _modoOscuro
+                    ? [const Color(0xFF1A1A1A), const Color(0xFF2D2D2D)]
+                    : [const Color(0xFF009688), const Color(0xFF00695C)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -107,6 +113,16 @@ class _PantallaInicioState extends State<PantallaInicio> {
                   "Perfil",
                   () => Navigator.pushNamed(context, "/perfil"),
                 ),
+                _menuItem(
+                  Icons.comment,
+                  "Comentarios",
+                  () => Navigator.pushNamed(context, "/comentarios"),
+                ),
+                _menuItem(
+                  Icons.business,
+                  "Colaboradores",
+                  () => Navigator.pushNamed(context, "/colaboradores"),
+                ),
                 _menuItem(Icons.exit_to_app, "Cerrar sesión", () async {
                   await FirebaseAuth.instance.signOut();
                   if (context.mounted) {
@@ -125,9 +141,11 @@ class _PantallaInicioState extends State<PantallaInicio> {
           // 🌤 Contenido principal con encabezado superior
           Expanded(
             child: Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFFF5F7FA), Color(0xFFEFF1F5)],
+                  colors: _modoOscuro
+                      ? [const Color(0xFF121212), const Color(0xFF1E1E1E)]
+                      : [const Color(0xFFF5F7FA), const Color(0xFFEFF1F5)],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
@@ -136,11 +154,11 @@ class _PantallaInicioState extends State<PantallaInicio> {
                 children: [
                   // 🔹 Encabezado superior con nombre y foto
                   Container(
-                    height: 80,
+                    height: 100,
                     padding: const EdgeInsets.symmetric(horizontal: 32),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      boxShadow: [
+                    decoration: BoxDecoration(
+                      color: _modoOscuro ? const Color(0xFF2D2D2D) : Colors.white,
+                      boxShadow: const [
                         BoxShadow(
                           color: Colors.black12,
                           blurRadius: 6,
@@ -161,13 +179,18 @@ class _PantallaInicioState extends State<PantallaInicio> {
                                 snapshot.data?.data()
                                     as Map<String, dynamic>? ??
                                 {};
-                            final nombre = data["nombre"] ?? "Usuario";
+                            final nombreCompleto = data["nombre"] ?? "Usuario";
+                            
+                            // Extraer solo el primer nombre
+                            final palabras = nombreCompleto.toString().trim().split(' ');
+                            String primerNombre = palabras.isNotEmpty ? palabras[0] : "Usuario";
+                            
                             return Text(
-                              "¡Hola, ${nombre.toString().toUpperCase()}!",
-                              style: const TextStyle(
+                              "¡Hola, ${primerNombre.toUpperCase()}!",
+                              style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF333333),
+                                color: _modoOscuro ? Colors.white : const Color(0xFF333333),
                               ),
                             );
                           },
@@ -188,12 +211,12 @@ class _PantallaInicioState extends State<PantallaInicio> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             "Acciones rápidas",
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF333333),
+                              color: _modoOscuro ? Colors.white : const Color(0xFF333333),
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -291,7 +314,7 @@ class _PantallaInicioState extends State<PantallaInicio> {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
         child: Row(
           children: [
             Icon(icon, color: Colors.white70),
@@ -311,10 +334,11 @@ class _PantallaInicioState extends State<PantallaInicio> {
     final uid = FirebaseAuth.instance.currentUser?.uid;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
+      backgroundColor: _modoOscuro ? const Color(0xFF121212) : const Color(0xFFF5F6FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: _modoOscuro ? const Color(0xFF1E1E1E) : Colors.white,
         elevation: 0,
+        toolbarHeight: 80,
         title: StreamBuilder<DocumentSnapshot>(
           stream: FirebaseFirestore.instance
               .collection("usuarios")
@@ -325,8 +349,13 @@ class _PantallaInicioState extends State<PantallaInicio> {
               return const Text("Cargando...");
             }
             final data = snapshot.data!.data() as Map<String, dynamic>? ?? {};
-            final nombre = data["nombre"] ?? "Usuario";
+            final nombreCompleto = data["nombre"] ?? "Usuario";
             final fotoPerfil = data["fotoPerfil"];
+            
+            // Extraer solo el primer nombre
+            final palabras = nombreCompleto.toString().trim().split(' ');
+            String primerNombre = palabras.isNotEmpty ? palabras[0] : "Usuario";
+            
             return Row(
               children: [
                 GestureDetector(
@@ -336,7 +365,9 @@ class _PantallaInicioState extends State<PantallaInicio> {
                     backgroundColor: Colors.grey.shade200,
                     backgroundImage:
                         (fotoPerfil != null && fotoPerfil.toString().isNotEmpty)
-                        ? NetworkImage(fotoPerfil)
+                        ? (fotoPerfil.toString().startsWith("assets/")
+                              ? AssetImage(fotoPerfil) as ImageProvider
+                              : NetworkImage(fotoPerfil))
                         : null,
                     child: (fotoPerfil == null || fotoPerfil.toString().isEmpty)
                         ? const Icon(Icons.person, color: Colors.teal)
@@ -346,18 +377,23 @@ class _PantallaInicioState extends State<PantallaInicio> {
                 const SizedBox(width: 10),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      "¡Hola, $nombre!",
-                      style: const TextStyle(
+                      "¡Hola, $primerNombre!",
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: Colors.black,
+                        color: _modoOscuro ? Colors.white : Colors.black,
                       ),
                     ),
-                    const Text(
+                    const SizedBox(height: 2),
+                    Text(
                       "Ayudemos a encontrar mascotas",
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: _modoOscuro ? Colors.grey.shade400 : Colors.grey,
+                      ),
                     ),
                   ],
                 ),
@@ -409,11 +445,18 @@ class _PantallaInicioState extends State<PantallaInicio> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextField(
+              style: TextStyle(color: _modoOscuro ? Colors.white : Colors.black),
               decoration: InputDecoration(
                 hintText: "Buscar mascotas perdidas...",
-                prefixIcon: const Icon(Icons.search),
+                hintStyle: TextStyle(
+                  color: _modoOscuro ? Colors.grey.shade500 : Colors.grey,
+                ),
+                prefixIcon: Icon(
+                  Icons.search,
+                  color: _modoOscuro ? Colors.grey.shade400 : Colors.grey,
+                ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: _modoOscuro ? const Color(0xFF2D2D2D) : Colors.white,
                 contentPadding: const EdgeInsets.all(12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -422,9 +465,13 @@ class _PantallaInicioState extends State<PantallaInicio> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               "Acciones Rápidas",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: _modoOscuro ? Colors.white : Colors.black,
+              ),
             ),
             const SizedBox(height: 10),
             Row(
@@ -459,9 +506,13 @@ class _PantallaInicioState extends State<PantallaInicio> {
               ],
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               "Menú Principal",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: _modoOscuro ? Colors.white : Colors.black,
+              ),
             ),
             const SizedBox(height: 10),
             _buildMenuItem(
@@ -491,6 +542,138 @@ class _PantallaInicioState extends State<PantallaInicio> {
               "Configuración de cuenta",
               onTap: () => Navigator.pushNamed(context, "/perfil"),
             ),
+            _buildMenuItem(
+              Icons.comment,
+              "Comentarios",
+              "Lee y comparte experiencias",
+              onTap: () => Navigator.pushNamed(context, "/comentarios"),
+            ),
+            _buildMenuItem(
+              Icons.business,
+              "Colaboradores",
+              "Nuestros aliados y patrocinadores",
+              onTap: () => Navigator.pushNamed(context, "/colaboradores"),
+            ),
+            const SizedBox(height: 10),
+            StreamBuilder<List<Colaborador>>(
+              stream: colaboradorViewModel.streamColaboradores(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+                }
+
+                final colaboradores = snapshot.data!;
+
+                final colaboradoresPreview = colaboradores.take(3).toList();
+
+                return Column(
+                  children: colaboradoresPreview.map((col) {
+                    return Card(
+                      color: _modoOscuro ? const Color(0xFF2D2D2D) : Colors.white,
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListTile(
+                        leading: col.logo.isNotEmpty
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  col.logo,
+                                  width: 50,
+                                  height: 50,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Icon(Icons.business,
+                                        size: 50, color: Colors.teal);
+                                  },
+                                ),
+                              )
+                            : const Icon(Icons.business,
+                                size: 50, color: Colors.teal),
+                        title: Text(
+                          col.nombre,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: _modoOscuro ? Colors.white : Colors.black,
+                          ),
+                        ),
+                        subtitle: Text(
+                          col.descripcion,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: _modoOscuro ? Colors.grey.shade400 : Colors.grey,
+                          ),
+                        ),
+                        trailing: Chip(
+                          label: Text(
+                            col.tipo,
+                            style: const TextStyle(fontSize: 10),
+                          ),
+                          backgroundColor: Colors.teal.shade100,
+                        ),
+                        onTap: () {
+                          Navigator.pushNamed(context, "/colaboradores");
+                        },
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+            const SizedBox(height: 10),
+            _buildMenuItem(
+              Icons.exit_to_app,
+              "Cerrar Sesión",
+              "Salir de tu cuenta actual",
+              onTap: () async {
+                final confirmar = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    backgroundColor: _modoOscuro ? const Color(0xFF2D2D2D) : Colors.white,
+                    title: Text(
+                      "Cerrar Sesión",
+                      style: TextStyle(color: _modoOscuro ? Colors.white : Colors.black),
+                    ),
+                    content: Text(
+                      "¿Deseas cerrar sesión?",
+                      style: TextStyle(color: _modoOscuro ? Colors.white70 : Colors.black87),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text("Cancelar"),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                        ),
+                        child: const Text("Cerrar Sesión"),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirmar == true) {
+                  await FirebaseAuth.instance.signOut();
+                  if (context.mounted) {
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      "/login",
+                      (_) => false,
+                    );
+                  }
+                }
+              },
+            ),
           ],
         ),
       ),
@@ -498,18 +681,47 @@ class _PantallaInicioState extends State<PantallaInicio> {
         currentIndex: _currentIndex,
         selectedItemColor: Colors.teal,
         unselectedItemColor: Colors.grey,
+        backgroundColor: _modoOscuro ? const Color(0xFF1E1E1E) : Colors.white,
+        type: BottomNavigationBarType.fixed,
         onTap: (index) {
-          setState(() => _currentIndex = index);
+          // Si toca el icono de tema (índice 1) => alternar modo oscuro
+          if (index == 1) {
+            setState(() {
+              _modoOscuro = !_modoOscuro;
+            });
+            return;
+          }
+
+          // Si toca Mapa (índice 3) => abrir mapa
+          if (index == 3) {
+            Navigator.pushNamed(context, "/mapa");
+            return;
+          }
+
+          // Si toca Perfil (índice 4) => abrir perfil
           if (index == 4) {
             Navigator.pushNamed(context, "/perfil");
+            return;
           }
+
+          // Para otros índices solo actualizar estado
+          setState(() => _currentIndex = index);
         },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Inicio"),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: "Buscar"),
-          BottomNavigationBarItem(icon: Icon(Icons.add), label: "Reportar"),
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: "Mapa"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Perfil"),
+        items: [
+          const BottomNavigationBarItem(icon: Icon(Icons.home), label: "Inicio"),
+          BottomNavigationBarItem(
+            icon: SizedBox(
+              width: 24,
+              height: 24,
+              child: CustomPaint(
+                painter: PawPainter(modoOscuro: _modoOscuro),
+              ),
+            ),
+            label: "Tema",
+          ),
+          const BottomNavigationBarItem(icon: Icon(Icons.add), label: "Reportar"),
+          const BottomNavigationBarItem(icon: Icon(Icons.map), label: "Mapa"),
+          const BottomNavigationBarItem(icon: Icon(Icons.person), label: "Perfil"),
         ],
       ),
     );
@@ -557,13 +769,109 @@ class _PantallaInicioState extends State<PantallaInicio> {
     VoidCallback? onTap,
   }) {
     return Card(
+      color: _modoOscuro ? const Color(0xFF2D2D2D) : Colors.white,
       child: ListTile(
         leading: Icon(icon, color: Colors.teal),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.chevron_right),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: _modoOscuro ? Colors.white : Colors.black,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(
+            color: _modoOscuro ? Colors.grey.shade400 : Colors.grey,
+          ),
+        ),
+        trailing: Icon(
+          Icons.chevron_right,
+          color: _modoOscuro ? Colors.grey.shade400 : Colors.grey,
+        ),
         onTap: onTap,
       ),
     );
   }
+}
+
+// 🐾 CUSTOM PAINTER PARA DIBUJAR LA HUELLA DE PERRO
+class PawPainter extends CustomPainter {
+  final bool modoOscuro;
+
+  PawPainter({required this.modoOscuro});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..style = PaintingStyle.fill;
+
+    // Dibujar la almohadilla principal (mitad blanca, mitad negra)
+    final mainPadPath = Path()
+      ..moveTo(size.width * 0.5, size.height * 0.9)
+      ..quadraticBezierTo(
+        size.width * 0.2,
+        size.height * 0.7,
+        size.width * 0.3,
+        size.height * 0.5,
+      )
+      ..quadraticBezierTo(
+        size.width * 0.35,
+        size.height * 0.3,
+        size.width * 0.5,
+        size.height * 0.3,
+      )
+      ..quadraticBezierTo(
+        size.width * 0.65,
+        size.height * 0.3,
+        size.width * 0.7,
+        size.height * 0.5,
+      )
+      ..quadraticBezierTo(
+        size.width * 0.8,
+        size.height * 0.7,
+        size.width * 0.5,
+        size.height * 0.9,
+      )
+      ..close();
+
+    // Mitad izquierda (blanca en modo oscuro, negra en modo claro)
+    canvas.save();
+    canvas.clipRect(Rect.fromLTWH(0, 0, size.width * 0.5, size.height));
+    paint.color = modoOscuro ? Colors.white : Colors.black;
+    canvas.drawPath(mainPadPath, paint);
+    canvas.restore();
+
+    // Mitad derecha (negra en modo oscuro, blanca en modo claro)
+    canvas.save();
+    canvas.clipRect(Rect.fromLTWH(size.width * 0.5, 0, size.width * 0.5, size.height));
+    paint.color = modoOscuro ? Colors.black : Colors.white;
+    canvas.drawPath(mainPadPath, paint);
+    canvas.restore();
+
+    // Dibujar los 4 deditos superiores
+    final toes = [
+      Offset(size.width * 0.25, size.height * 0.2), // Dedo izquierdo
+      Offset(size.width * 0.4, size.height * 0.1), // Dedo centro-izquierdo
+      Offset(size.width * 0.6, size.height * 0.1), // Dedo centro-derecho
+      Offset(size.width * 0.75, size.height * 0.2), // Dedo derecho
+    ];
+
+    for (var toe in toes) {
+      // Determinar color según la posición
+      paint.color = toe.dx < size.width * 0.5
+          ? (modoOscuro ? Colors.white : Colors.black)
+          : (modoOscuro ? Colors.black : Colors.white);
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: toe,
+          width: size.width * 0.15,
+          height: size.height * 0.12,
+        ),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(PawPainter oldDelegate) => oldDelegate.modoOscuro != modoOscuro;
 }
